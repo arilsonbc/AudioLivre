@@ -30,6 +30,11 @@ public class MainWindow : Window {
     readonly TextBlock status=new() { Text="Pronto. Adicione arquivos para começar.",TextWrapping=TextWrapping.Wrap };
     readonly TextBlock hint=new() { Text="Arraste vídeos ou áudios para a lista • A primeira faixa de áudio será usada",TextWrapping=TextWrapping.Wrap };
     readonly ProgressBar progress=new() { Minimum=0,Maximum=100,Height=6 };
+    readonly TextBlock progressText=new() { Text="0% • Tempo estimado: —",FontSize=12,TextWrapping=TextWrapping.Wrap };
+    readonly Button update=new() { Content="Verificar atualização",HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Top };
+    readonly DispatcherTimer updateTimer=new() { Interval=TimeSpan.FromHours(4) };
+    ReleaseUpdate availableUpdate; bool checkingUpdate;
+    public string ProgressSummary=>progressText.Text;
     readonly Button add=new() { Content="+ Adicionar arquivos" },remove=new() { Content="Remover" },clear=new() { Content="Limpar fila" },browse=new() { Content="Escolher…" },convert=new() { Content="Converter" },cancel=new() { Content="Cancelar",IsEnabled=false },open=new() { Content="Abrir pasta" };
     readonly Engine engine=new(AppContext.BaseDirectory);
     CancellationTokenSource cancellation; bool running;
@@ -45,7 +50,8 @@ public class MainWindow : Window {
         var heading=new StackPanel { Spacing=4 };
         heading.Children.Add(new TextBlock { Text="ÁudioLivre",FontSize=30,FontWeight=FontWeight.Bold });
         heading.Children.Add(new TextBlock { Text="Seu vídeo vira áudio. Simples, local e sem complicação.",Foreground=Brush.Parse("#636F80") });
-        Put(root,heading,0);
+        var headerArea=new Grid { ColumnDefinitions=new("*,Auto"),ColumnSpacing=12 };
+        headerArea.Children.Add(heading); Grid.SetColumn(update,1); headerArea.Children.Add(update); Put(root,headerArea,0);
         Put(root,new StackPanel { Orientation=Orientation.Horizontal,Spacing=8,Children={add,remove,clear} },1);
         files.ItemsSource=Items;
         files.ItemTemplate=new FuncDataTemplate<QueueItem>((item,scope)=> {
@@ -70,7 +76,18 @@ public class MainWindow : Window {
         folder.Text=Path.Combine(String.IsNullOrWhiteSpace(music)?Environment.GetFolderPath(Environment.SpecialFolder.UserProfile):music,"ÁudioLivre");
         Put(root,progress,6); status.FontSize=12; Put(root,status,7);
         convert.Background=Brush.Parse("#2463DC"); convert.Foreground=Brushes.White;
-        Put(root,new StackPanel { Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=8,Children={open,cancel,convert} },8);
+        var footer=new Grid { ColumnDefinitions=new("*,Auto"),ColumnSpacing=12 };
+        footer.Children.Add(progressText);
+        var actions=new StackPanel { Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=8,Children={open,cancel,convert} };
+        Grid.SetColumn(actions,1); footer.Children.Add(actions); Put(root,footer,8);
+        update.Click+=async(_,_)=> {
+            if(availableUpdate==null) { await CheckUpdates(); return; }
+            try { Process.Start(new ProcessStartInfo { FileName=availableUpdate.Page.AbsoluteUri,UseShellExecute=true }); }
+            catch(Exception ex) { await Error(ex.Message); }
+        };
+        Opened+=async(_,_)=> { if(Environment.GetCommandLineArgs().Contains("--smoke-ui") || Application.Current?.ApplicationLifetime is not Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime) return; await CheckUpdates(); updateTimer.Start(); };
+        updateTimer.Tick+=async(_,_)=>await CheckUpdates();
+        Closed+=(_,_)=>updateTimer.Stop();
         add.Click+=async(_,_)=> {
             try {
                 var selected=await StorageProvider.OpenFilePickerAsync(new() { Title="Adicionar vídeos ou áudios",AllowMultiple=true,FileTypeFilter=new[]{new FilePickerFileType("Vídeos e áudios") { Patterns=new[]{"*.mp4","*.mkv","*.mov","*.avi","*.webm","*.wmv","*.m4v","*.mpeg","*.mpg","*.mts","*.ts","*.mp3","*.wav","*.flac","*.m4a","*.aac","*.ogg","*.opus","*.wma"} },FilePickerFileTypes.All} });
@@ -91,6 +108,18 @@ public class MainWindow : Window {
         Closing+=(_,e)=> { if(running) { e.Cancel=true; cancellation?.Cancel(); status.Text="Cancelando… Aguarde a conclusão para fechar."; } };
     }
     static StackPanel Field(string title,Control control)=>new() { Spacing=6,Children={new TextBlock { Text=title },control} };
+    async Task CheckUpdates() {
+        if(checkingUpdate) return;
+        checkingUpdate=true; update.IsEnabled=false; update.Content="Verificando…";
+        try {
+            var assemblyVersion=typeof(MainWindow).Assembly.GetName().Version;
+            var current=new Version(assemblyVersion.Major,assemblyVersion.Minor,assemblyVersion.Build);
+            availableUpdate=await ReleaseUpdates.Check(current);
+            update.Content=availableUpdate==null?"Você está atualizado":"Atualizar para "+availableUpdate.Version;
+            ToolTip.SetTip(update,availableUpdate==null?"Clique para consultar novamente":"Abre a release no GitHub para baixar e instalar a nova versão.");
+        } catch(Exception) { update.Content=availableUpdate==null?"Tentar verificar atualização":"Atualizar para "+availableUpdate.Version; ToolTip.SetTip(update,"Não foi possível consultar o GitHub. Verifique sua conexão e tente novamente."); }
+        finally { checkingUpdate=false; update.IsEnabled=true; }
+    }
     static void Put(Grid root,Control child,int row) { Grid.SetRow(child,row); root.Children.Add(child); }
     void UpdateQuality()=>quality.IsEnabled=!running && (string)format.SelectedItem!="WAV" && (string)format.SelectedItem!="FLAC";
     void Busy(bool value) { running=value; foreach(var c in new Control[]{add,remove,clear,browse,format,folder,convert,open}) c.IsEnabled=!value; cancel.IsEnabled=value; UpdateQuality(); }
@@ -114,19 +143,32 @@ public class MainWindow : Window {
         if(items.Length==0) { status.Text="Todos os arquivos já foram convertidos. Limpe a fila para converter novamente."; return; }
         string selectedFormat=(string)format.SelectedItem; int selectedQuality=quality.SelectedIndex,ok=0,failed=0,done=0;
         cancellation=new(); var token=cancellation.Token; Busy(true); progress.Value=0;
+        progressText.Text="0% • Tempo estimado: calculando…";
+        var watch=Stopwatch.StartNew();
         try {
             foreach(var item in items) {
                 if(token.IsCancellationRequested) break;
                 item.State="Convertendo…"; item.Percent="0%"; status.Text=$"Convertendo {done+1} de {items.Length}: {item.Name}";
                 int index=done;
                 try {
-                    string result=await Task.Run(()=>engine.ConvertFile(item.Path,target,selectedFormat,selectedQuality,token,p=>Dispatcher.UIThread.Post(()=> { if(item.State!="Convertendo…") return; item.Percent=p+"%"; progress.Value=(index*100+p)/items.Length; })));
+                    string result=await Task.Run(()=>engine.ConvertFile(item.Path,target,selectedFormat,selectedQuality,token,p=>Dispatcher.UIThread.Post(()=> {
+                        if(item.State!="Convertendo…") return;
+                        item.Percent=p+"%"; double total=(index*100.0+p)/items.Length; progress.Value=total;
+                        string eta="calculando…";
+                        // Queue estimate is approximate because subsequent files can take different times.
+                        if(total>0 && total<100 && watch.Elapsed.TotalSeconds>=2) {
+                            var remaining=TimeSpan.FromSeconds(Math.Min(31536000,watch.Elapsed.TotalSeconds*(100.0-total)/total));
+                            eta=remaining.TotalHours>=1?$"{(int)remaining.TotalHours}h {remaining.Minutes:00}min":remaining.TotalMinutes>=1?$"{(int)remaining.TotalMinutes}min {remaining.Seconds:00}s":$"{Math.Max(1,remaining.Seconds)}s";
+                        }
+                        progressText.Text=$"{(int)total}% do total • Tempo restante estimado: {eta}";
+                    })));
                     item.State="Concluído"; item.Percent="100%"; item.Details=result; ok++;
                 } catch(OperationCanceledException) { item.State="Cancelado"; item.Percent="—"; break; }
                 catch(Exception ex) { item.State="Falhou · detalhes"; item.Percent="—"; item.Details=ex.Message; failed++; }
                 done++; progress.Value=done*100/items.Length;
             }
             status.Text=(token.IsCancellationRequested?"Cancelado. ":"Finalizado. ")+$"{ok} concluído(s), {failed} falha(s)."+(failed>0?" Clique duas vezes na falha para ver detalhes.":"");
+            progressText.Text=$"{(int)progress.Value}% do total • "+(token.IsCancellationRequested?"Cancelado":failed>0?"Fila encerrada com falhas":"Concluído")+$" • Decorrido: {watch.Elapsed:hh\\:mm\\:ss}";
         } finally { Busy(false); cancellation.Dispose(); cancellation=null; }
     }
 }

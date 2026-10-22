@@ -12,6 +12,12 @@ class Integration {
  [STAThread] static void Main(string[] args) {
   string root=args[0],input=args[1],silent=args[2],dest=args[3]; Directory.CreateDirectory(dest);
   var engine=new Engine(root); engine.Check(); var info=engine.Probe(input,CancellationToken.None);
+  string release="{\"draft\":false,\"prerelease\":false,\"tag_name\":\"v0.4.0\",\"html_url\":\"https://github.com/arilsonbc/AudioLivre/releases/tag/v0.4.0\"}";
+  Assert(ReleaseUpdates.Parse(release,new Version(0,3,0))!=null,"Reconhece release mais recente");
+  Assert(ReleaseUpdates.Parse(release,new Version(0,4,0))==null,"Não avisa para versão igual");
+  Assert(ReleaseUpdates.Parse(release.Replace("v0.4.0","v0.2.0"),new Version(0,3,0))==null,"Não oferece downgrade");
+  Assert(ReleaseUpdates.Parse(release.Replace("\"prerelease\":false","\"prerelease\":true"),new Version(0,3,0))==null,"Ignora pré-release");
+  Assert(ReleaseUpdates.Parse(release.Replace("github.com","example.com"),new Version(0,3,0))==null,"Rejeita destino externo de atualização");
   Assert(info.Audio && info.Duration>=2.9,"Leitura de vídeo com espaço e acento");
   foreach(string format in new[]{"MP3","WAV","FLAC","M4A","Opus","OGG"}) {
    for(int q=0;q<(format=="WAV"||format=="FLAC"?1:3);q++) {

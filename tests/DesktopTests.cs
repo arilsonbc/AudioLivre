@@ -15,6 +15,7 @@ class DesktopTests {
   task.GetAwaiter().GetResult();
   if(!window.Items[0].State.StartsWith("Falhou") || window.Items[1].State!="Concluído") throw new Exception("Fila não continuou após falha: "+window.Status);
   if(window.Items[1].Percent!="100%") throw new Exception("Progresso incorreto");
+  if(!window.ProgressSummary.StartsWith("100% do total") || !window.ProgressSummary.Contains("falhas")) throw new Exception("Resumo total incorreto");
   window.Close(); Console.WriteLine("PASS interface: duplicatas, fila após erro, progresso e conclusão");
  }
 }
