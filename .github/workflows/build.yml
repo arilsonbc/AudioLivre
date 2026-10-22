@@ -1,0 +1,63 @@
+name: Windows e Linux
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-22.04
+            rid: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Dependências Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg xvfb libice6 libsm6 libfontconfig1 libx11-6 libxext6 libxrender1 libxcb1 libxkbcommon0 libglib2.0-0 libfreetype6
+      - name: Pacote independente do runtime .NET
+        shell: pwsh
+        run: ./package.ps1 -Runtime '${{ matrix.rid }}'
+      - name: Conversões e fila da interface
+        shell: pwsh
+        run: ./test.ps1
+      - name: Inicialização nativa Linux e conversão do pacote extraído
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p test-results/extracted
+          tar -xzf dist/packages/*linux*.tar.gz -C test-results/extracted
+          timeout 30 xvfb-run -a test-results/extracted/AudioLivre --smoke-ui
+          test-results/extracted/AudioLivre --convert "$PWD/test-results/vídeo de teste.mp4" "$PWD/test-results/extracted-output" MP3 1
+          ffprobe -v error -show_entries stream=codec_name test-results/extracted-output/*.mp3
+      - name: Inicialização nativa Windows e conversão do pacote extraído
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Expand-Archive dist/packages/*win*.zip test-results/extracted
+          $app = (Resolve-Path test-results/extracted/AudioLivre.exe).Path
+          $p = Start-Process $app -ArgumentList '--smoke-ui' -WindowStyle Hidden -PassThru
+          if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'UI timed out' }
+          if ($p.ExitCode -ne 0) { throw 'UI failed' }
+          $info = [Diagnostics.ProcessStartInfo]::new($app)
+          $info.UseShellExecute = $false
+          foreach ($arg in @('--convert',(Resolve-Path 'test-results/vídeo de teste.mp4').Path,"$PWD/test-results/extracted-output",'MP3','1')) { $info.ArgumentList.Add($arg) }
+          $p = [Diagnostics.Process]::Start($info); $p.WaitForExit()
+          if ($p.ExitCode -ne 0) { throw 'Packaged conversion failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AudioLivre-${{ matrix.rid }}
+          path: dist/packages/*
+          if-no-files-found: error
