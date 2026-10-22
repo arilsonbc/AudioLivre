@@ -4,7 +4,9 @@ Conversor local de vídeos e áudios para MP3, WAV, FLAC, M4A, Opus e OGG. C#/.N
 
 ## Usar
 
-Baixe em https://github.com/arilsonbc/AudioLivre/releases .
+Baixe os pacotes atuais em https://github.com/arilsonbc/AudioLivre/actions (abra a execução aprovada mais recente e a seção Artifacts). As releases anteriores continuam disponíveis.
+
+No artefato Windows há duas opções: `AudioLivre-0.2.0-win-x64-setup.exe` instala para o usuário atual, cria atalho no menu Iniciar e oferece desinstalação; `AudioLivre-0.2.0-win-x64-portable.zip` funciona após extrair. O instalador também oferece atalho opcional na área de trabalho e não requer administrador. Ambos incluem o mesmo aplicativo e FFmpeg.
 
 - Windows 10/11 x64: extraia **todo** o ZIP e abra `AudioLivre.exe`. FFmpeg e runtime .NET incluídos; sem instalador.
 - Linux x64 com glibc e ambiente gráfico X11/XWayland: extraia o `.tar.gz`, instale FFmpeg pelo gerenciador da distribuição (`sudo apt install ffmpeg` no Ubuntu/Debian) e execute `./AudioLivre`. O runtime .NET está incluído. Não execute com sudo. Use `chmod +x AudioLivre start.sh` se seu gerenciador de arquivos remover as permissões.

@@ -56,6 +56,29 @@ jobs:
           foreach ($arg in @('--convert',(Resolve-Path 'test-results/vídeo de teste.mp4').Path,"$PWD/test-results/extracted-output",'MP3','1')) { $info.ArgumentList.Add($arg) }
           $p = [Diagnostics.Process]::Start($info); $p.WaitForExit()
           if ($p.ExitCode -ne 0) { throw 'Packaged conversion failed' }
+      - name: Gerar instalador Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (!(Test-Path $compiler)) { throw 'Inno Setup não encontrado no runner' }
+          & $compiler installer/AudioLivre.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Falha no instalador' }
+          $setup = Get-Item dist/packages/*setup.exe
+          "$((Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($setup.Name)" | Set-Content "$($setup.FullName).sha256" -Encoding ASCII
+      - name: Testar instalação e desinstalação
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $target = "$PWD/test-results/installed"
+          $setup = (Get-Item dist/packages/*setup.exe).FullName
+          $p = Start-Process $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$target`"") -WindowStyle Hidden -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$target/AudioLivre.exe")) { throw 'Instalação falhou' }
+          $p = Start-Process "$target/AudioLivre.exe" -ArgumentList '--smoke-ui' -WindowStyle Hidden -PassThru
+          if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'Aplicativo instalado travou' }
+          if ($p.ExitCode -ne 0) { throw 'Aplicativo instalado falhou' }
+          $p = Start-Process "$target/unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -WindowStyle Hidden -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or (Test-Path "$target/AudioLivre.exe")) { throw 'Desinstalação falhou' }
       - uses: actions/upload-artifact@v4
         with:
           name: AudioLivre-${{ matrix.rid }}
