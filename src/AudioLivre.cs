@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
+[assembly: System.Reflection.AssemblyTitle("ÁudioLivre")]
+[assembly: System.Reflection.AssemblyVersion("0.1.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.1.0.0")]
+
 namespace AudioLivre {
     public class MediaInfo { public double Duration; public bool Audio; }
     public class Engine {

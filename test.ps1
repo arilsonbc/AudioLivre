@@ -11,7 +11,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Fixture failed' }
 & "$appRoot\ffmpeg.exe" -hide_banner -loglevel error -f lavfi -i 'color=c=black:s=160x90:r=15:d=2' -c:v mpeg4 -an -y $silent
 if ($LASTEXITCODE -ne 0) { throw 'Fixture failed' }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-& $compiler /nologo /target:exe /reference:"$appRoot\AudioLivre.exe" /out:"$appRoot\Integration.exe" "$PSScriptRoot\tests\Integration.cs"
+& $compiler /nologo /target:exe /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:"$appRoot\AudioLivre.exe" /out:"$appRoot\Integration.exe" "$PSScriptRoot\tests\Integration.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed' }
 & "$appRoot\Integration.exe" $appRoot $video $silent (Join-Path $FixtureRoot ([guid]::NewGuid().ToString('N')))
 if ($LASTEXITCODE -ne 0) { throw 'Integration tests failed' }
