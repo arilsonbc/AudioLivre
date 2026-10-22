@@ -10,6 +10,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Falha na compilação.' }
 <configuration><startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.8" /></startup></configuration>
 '@ | Set-Content -Encoding UTF8 "$destination\AudioLivre.exe.config"
 Copy-Item "$projectRoot\README.md" $destination
+Copy-Item "$projectRoot\LICENSE" $destination
 foreach ($tool in @('ffmpeg.exe','ffprobe.exe')) {
     if (Test-Path "$projectRoot\tools\$tool") { Copy-Item "$projectRoot\tools\$tool" $destination }
 }

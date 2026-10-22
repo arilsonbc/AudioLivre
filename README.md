@@ -12,6 +12,10 @@ MP3/M4A/Opus/OGG usam compressão com perda. WAV e FLAC não recuperam qualidade
 
 Execute `powershell -ExecutionPolicy Bypass -File .\build.ps1`. O compilador do .NET Framework já existente no Windows é utilizado; nenhum pacote NuGet é necessário. Coloque `ffmpeg.exe` e `ffprobe.exe` em `tools/` antes de empacotar. O build gera `dist/AudioLivre/`.
 
+`powershell -ExecutionPolicy Bypass -File .\package.ps1` baixa o build fixado do FFmpeg se necessário, verifica seu SHA256 e gera o ZIP. Execute `pwsh -File .\test.ps1` para testar conversões reais, preservação de arquivos, erros e cancelamento.
+
+Repositório: https://github.com/arilsonbc/AudioLivre
+
 ## Dependência
 
 FFmpeg é executado como processo separado. A distribuição deve acompanhar os avisos de licença, a identificação exata do build e o acesso ao código-fonte correspondente. Consulte `THIRD-PARTY.md` do pacote.
