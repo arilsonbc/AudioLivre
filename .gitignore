@@ -1,0 +1,6 @@
+dist/
+bin/
+obj/
+tools/*.exe
+test-results/
+*.user
