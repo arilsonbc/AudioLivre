@@ -31,7 +31,7 @@ public class MainWindow : Window {
     readonly TextBlock hint=new() { Text="Arraste vídeos ou áudios para a lista • A primeira faixa de áudio será usada",TextWrapping=TextWrapping.Wrap };
     readonly ProgressBar progress=new() { Minimum=0,Maximum=100,Height=6 };
     readonly TextBlock progressText=new() { Text="0% • Tempo estimado: —",FontSize=12,TextWrapping=TextWrapping.Wrap };
-    readonly Button update=new() { Content="Verificar atualização",HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Top };
+    readonly Button update=new() { Content="Verificar Atualizações",HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Top };
     readonly DispatcherTimer updateTimer=new() { Interval=TimeSpan.FromHours(4) };
     ReleaseUpdate availableUpdate; bool checkingUpdate;
     public string ProgressSummary=>progressText.Text;
@@ -115,7 +115,7 @@ public class MainWindow : Window {
             var assemblyVersion=typeof(MainWindow).Assembly.GetName().Version;
             var current=new Version(assemblyVersion.Major,assemblyVersion.Minor,assemblyVersion.Build);
             availableUpdate=await ReleaseUpdates.Check(current);
-            update.Content=availableUpdate==null?"Você está atualizado":"Atualizar para "+availableUpdate.Version;
+            update.Content=availableUpdate==null?"Verificar Atualizações":"Atualizar para "+availableUpdate.Version;
             ToolTip.SetTip(update,availableUpdate==null?"Clique para consultar novamente":"Abre a release no GitHub para baixar e instalar a nova versão.");
         } catch(Exception) { update.Content=availableUpdate==null?"Tentar verificar atualização":"Atualizar para "+availableUpdate.Version; ToolTip.SetTip(update,"Não foi possível consultar o GitHub. Verifique sua conexão e tente novamente."); }
         finally { checkingUpdate=false; update.IsEnabled=true; }
