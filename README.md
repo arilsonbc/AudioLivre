@@ -30,3 +30,11 @@ O motor está em `src/AudioLivre.Core`; a interface, em `src/AudioLivre.Desktop`
 No Linux, FFmpeg é procurado primeiro junto ao aplicativo e depois no PATH. Dependências gráficas usuais incluem libX11, libICE, libSM, libfontconfig e libfreetype; consulte https://docs.avaloniaui.net/docs/supported-platforms . Distribuições musl/Alpine, ARM e sessões Wayland sem XWayland não foram incluídas nos pacotes.
 
 Atualizações devem usar commits pequenos, com uma mudança coerente por commit, enviados ao GitHub após validação. Consulte VALIDATION.md e THIRD-PARTY.md.
+
+## Novidades 0.3.0
+
+Abaixo da barra: porcentagem total, tempo restante estimado e tempo decorrido ao terminar. A estimativa depende da velocidade observada e pode variar bastante entre arquivos de tamanhos diferentes; no início aparece calculando.
+
+No canto superior direito, Verificar atualização consulta a última release pública e estável de arilsonbc/AudioLivre ao abrir e a cada quatro horas. Havendo versão maior, o botão mostra Atualizar para X e abre a página oficial da release para baixar o setup ou portátil. No Windows, execute o setup para atualizar; no Linux, substitua a pasta extraída. Não substitui arquivos enquanto o aplicativo está em uso.
+
+Somente essa consulta de versão usa internet; vídeos e áudios continuam locais. Falhas de conexão não interrompem conversões. Publique releases com tags numéricas crescentes, como v0.3.0 e v0.4.0. Commits e artefatos do Actions não disparam avisos de atualização.

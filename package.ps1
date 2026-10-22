@@ -13,8 +13,8 @@ if ($Runtime -eq 'win-x64') {
     }
 } elseif (!$IsLinux) { throw 'Package Linux archives on Linux to preserve executable permissions.' }
 & "$PSScriptRoot/build.ps1" -Runtime $Runtime
-$appRoot = Join-Path $PSScriptRoot "dist/0.2.0/$Runtime"
-$name = "AudioLivre-0.2.0-$Runtime-portable"
+$appRoot = Join-Path $PSScriptRoot "dist/0.3.0/$Runtime"
+$name = "AudioLivre-0.3.0-$Runtime-portable"
 if ($Runtime -eq 'win-x64') {
     $destination = Join-Path $OutputDirectory "$name.zip"
     Compress-Archive -Path "$appRoot/*" -DestinationPath $destination -Force

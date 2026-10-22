@@ -1,4 +1,4 @@
-#define AppVersion "0.2.0"
+#define AppVersion "0.3.0"
 [Setup]
 AppId={{19F2CA6C-0536-420C-834C-962B9F351E76}
 AppName=ÁudioLivre
@@ -24,7 +24,7 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 [Tasks]
 Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; Flags: unchecked
 [Files]
-Source: "..\dist\0.2.0\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\0.3.0\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
 Name: "{group}\ÁudioLivre"; Filename: "{app}\AudioLivre.exe"; IconFilename: "{app}\AudioLivre.exe"
 Name: "{userdesktop}\ÁudioLivre"; Filename: "{app}\AudioLivre.exe"; Tasks: desktopicon; IconFilename: "{app}\AudioLivre.exe"
