@@ -36,6 +36,7 @@ public class MainWindow : Window {
     public string OutputFolder { get=>folder.Text; set=>folder.Text=value; }
     public string Status=>status.Text;
     public MainWindow() {
+        Icon=new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://AudioLivre/Assets/audiolivre.png")));
         Title="ÁudioLivre · Conversor de áudio"; Width=920; Height=740; MinWidth=760; MinHeight=660;
         Background=Brush.Parse("#F6F8FB"); Foreground=Brush.Parse("#1D2737");
         WindowStartupLocation=WindowStartupLocation.CenterScreen;
