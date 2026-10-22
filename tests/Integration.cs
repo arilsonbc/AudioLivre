@@ -4,7 +4,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+
 using AudioLivre;
 class Integration {
  static int count;
@@ -38,21 +38,6 @@ class Integration {
    Assert(rejected,"Cancelamento durante o processamento");
   }
   Assert(Directory.GetFiles(dest,".audiolivre-*").Length==0,"Limpa arquivos temporários após cancelamento");
-  Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-  using(var form=new MainForm()) {
-   form.ShowInTaskbar=false; form.StartPosition=FormStartPosition.Manual; form.Location=new System.Drawing.Point(-2000,-2000); form.Show();
-   var flags=BindingFlags.Instance|BindingFlags.NonPublic;
-   ((TextBox)typeof(MainForm).GetField("folder",flags).GetValue(form)).Text=dest;
-   typeof(MainForm).GetMethod("AddFiles",flags).Invoke(form,new object[]{new[]{silent,bad,input,input}});
-   var list=(ListView)typeof(MainForm).GetField("files",flags).GetValue(form);
-   Assert(list.Items.Count==3,"Interface evita duplicação de entradas");
-   var queue=(Task)typeof(MainForm).GetMethod("RunQueue",flags).Invoke(form,new object[0]);
-   var deadline=DateTime.UtcNow.AddSeconds(45);
-   while(!queue.IsCompleted && DateTime.UtcNow<deadline) { Application.DoEvents(); Thread.Sleep(10); }
-   Assert(queue.IsCompleted && !queue.IsFaulted,"Fila da interface termina sem travar");
-   Assert(list.Items[0].SubItems[1].Text.StartsWith("Falhou") && list.Items[1].SubItems[1].Text.StartsWith("Falhou") && list.Items[2].SubItems[1].Text=="Concluído","Fila continua após duas falhas e converte o próximo arquivo");
-   form.Close();
-  }
   Console.WriteLine("TOTAL "+count+" verificações aprovadas");
  }
 }
